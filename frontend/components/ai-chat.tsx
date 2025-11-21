@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
-import { Loader2, Send, Bot, User, FileCode } from 'lucide-react';
-import { useApp } from '@/app/providers';
+import { useApp } from './providers';
+import { Send, Loader2, Bot, User, Sparkles } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -11,7 +11,7 @@ interface Message {
   timestamp: Date;
 }
 
-export default function ChatInterface() {
+export default function AIChat() {
   const { currentContract } = useApp();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -26,18 +26,11 @@ export default function ChatInterface() {
     scrollToBottom();
   }, [messages]);
 
-  // Auto-notify when contract is analyzed
   useEffect(() => {
     if (currentContract) {
       const notification: Message = {
         role: 'assistant',
-        content: `I've analyzed the contract **${currentContract.name}** at ${currentContract.address.slice(0, 10)}...${currentContract.address.slice(-8)}
-
-Now you can ask me specific questions about this contract! Try:
-- "What does this contract do?"
-- "Explain the main functions"
-- "Is this contract safe?"
-- "What are the risks?"`,
+        content: `I've analyzed **${currentContract.name}**! Ask me anything about this contract.`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, notification]);
@@ -59,21 +52,16 @@ Now you can ask me specific questions about this contract! Try:
     setLoading(true);
 
     try {
-      // 🔥 BUILD CONTEXT-AWARE MESSAGE
       let messageToSend = input;
       
       if (currentContract) {
-        // Add contract context to the message
-        messageToSend = `Context: I'm asking about the smart contract "${currentContract.name}" at address ${currentContract.address}.
+        messageToSend = `Context: User is asking about the smart contract "${currentContract.name}" at ${currentContract.address}.
 
-Previous AI Analysis:
-${currentContract.analysis}
-
-Key Functions: ${currentContract.abi.filter((item: any) => item.type === 'function').slice(0, 5).map((fn: any) => fn.name).join(', ')}
+Previous Analysis: ${currentContract.analysis}
 
 User Question: ${input}
 
-Please answer specifically about THIS contract, not general smart contract info.`;
+Answer specifically about THIS contract.`;
       }
 
       const response = await api.chat(messageToSend);
@@ -98,33 +86,31 @@ Please answer specifically about THIS contract, not general smart contract info.
   };
 
   return (
-    <div className="flex flex-col h-[600px] bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10">
-      {/* Chat Header */}
-      <div className="p-4 border-b border-white/10">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Bot className="w-6 h-6" />
-          Smart Contract Assistant
-        </h2>
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-400">Ask me anything about Ethereum contracts</p>
-          {currentContract && (
-            <div className="flex items-center gap-2 bg-green-500/20 px-3 py-1 rounded-full">
-              <FileCode className="w-4 h-4 text-green-400" />
-              <span className="text-xs text-green-300 font-medium">
-                {currentContract.name}
-              </span>
-            </div>
-          )}
+    <div className="glass rounded-2xl h-[calc(100vh-12rem)] flex flex-col">
+      {/* Header */}
+      <div className="p-6 border-b border-white/10">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-green-400" />
+          </div>
+          <h3 className="text-lg font-bold">AI Assistant</h3>
         </div>
+        {currentContract && (
+          <div className="flex items-center gap-2 mt-2 bg-green-500/10 border border-green-500/20 px-3 py-1 rounded-full w-fit">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-xs text-green-300 font-medium">Analyzing: {currentContract.name}</span>
+          </div>
+        )}
+        <p className="text-gray-400 text-sm">Online</p>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.length === 0 ? (
           <div className="text-center text-gray-400 mt-20">
             <Bot className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p className="text-lg">Start a conversation!</p>
-            <p className="text-sm mt-2">Analyze a contract first, or ask general questions</p>
+            <p className="text-lg">Hello! I'm your Smart Contract AI Assistant.</p>
+            <p className="text-sm mt-2">Ask me anything about contract analysis, security, or blockchain interactions.</p>
           </div>
         ) : (
           messages.map((msg, idx) => (
@@ -133,26 +119,26 @@ Please answer specifically about THIS contract, not general smart contract info.
               className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-400 to-cyan-400 flex items-center justify-center flex-shrink-0">
                   <Bot className="w-5 h-5 text-white" />
                 </div>
               )}
               
               <div
-                className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                className={`max-w-[75%] rounded-2xl px-4 py-3 ${
                   msg.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white/10 text-gray-100'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                    : 'glass text-gray-100'
                 }`}
               >
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                 <span className="text-xs opacity-50 mt-1 block">
                   {msg.timestamp.toLocaleTimeString()}
                 </span>
               </div>
 
               {msg.role === 'user' && (
-                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
                   <User className="w-5 h-5 text-white" />
                 </div>
               )}
@@ -162,10 +148,10 @@ Please answer specifically about THIS contract, not general smart contract info.
 
         {loading && (
           <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-400 to-cyan-400 flex items-center justify-center">
               <Bot className="w-5 h-5 text-white" />
             </div>
-            <div className="bg-white/10 rounded-2xl px-4 py-3">
+            <div className="glass rounded-2xl px-4 py-3">
               <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
             </div>
           </div>
@@ -180,14 +166,14 @@ Please answer specifically about THIS contract, not general smart contract info.
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={currentContract ? `Ask about ${currentContract.name}...` : "Ask about smart contracts..."}
-            className="flex-1 bg-white/5 text-white placeholder-gray-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder={currentContract ? `Ask about ${currentContract.name}...` : "Ask anything..."}
+            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             disabled={loading}
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-xl px-6 py-3 font-medium transition-colors flex items-center gap-2"
+            className="bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded-xl px-6 py-3 font-semibold transition-all flex items-center gap-2"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />

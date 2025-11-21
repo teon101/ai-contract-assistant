@@ -6,11 +6,13 @@ import cors from 'cors';
 import aiRoutes from './routes/aiRoutes';
 import contractRoutes from './routes/contractRoutes';
 import walletRoutes from './routes/walletRoutes';
+import priceRoutes from './routes/priceRoutes'; // 🆕 ADD THIS
+import transactionRoutes from './routes/transactionRoutes';
 
 const app: Express = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware - Allow all origins for Codespaces
+// Middleware
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -22,6 +24,8 @@ app.use(express.json());
 app.use('/api/ai', aiRoutes);
 app.use('/api/contracts', contractRoutes);
 app.use('/api/wallet', walletRoutes);
+app.use('/api/price', priceRoutes); // 🆕 ADD THIS
+app.use('/api/transactions', transactionRoutes);
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
@@ -37,14 +41,17 @@ app.get('/health', (req: Request, res: Response) => {
 app.get('/', (req: Request, res: Response) => {
   res.json({ 
     message: 'Welcome to Smart Contract AI Assistant API',
-    version: '0.1.0',
+    version: '0.2.0',
     endpoints: {
-      health: '/health',
-      chat: 'POST /api/ai/chat',
-      analyzeContract: 'POST /api/contracts/analyze',
-      contractInfo: 'GET /api/contracts/info/:address',
-      walletInfo: 'GET /api/wallet/:address'
-    }
+  health: '/health',
+  chat: 'POST /api/ai/chat',
+  analyzeContract: 'POST /api/contracts/analyze',
+  contractInfo: 'GET /api/contracts/info/:address',
+  walletInfo: 'GET /api/wallet/:address',
+  tokenPrice: 'GET /api/price/token/:address',
+  ethPrice: 'GET /api/price/eth',
+  transactions: 'GET /api/transactions/:address' // ADD THIS
+}
   });
 });
 

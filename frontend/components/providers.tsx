@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
-import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { config } from '@/lib/wagmi';
 
 import '@rainbow-me/rainbowkit/styles.css';
@@ -27,13 +27,17 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const queryClient = new QueryClient();
 
-export function AppProvider({ children }: { children: ReactNode }) {
+export function Providers({ children }: { children: ReactNode }) {
   const [currentContract, setCurrentContract] = useState<ContractData | null>(null);
 
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
+        <RainbowKitProvider theme={darkTheme({
+          accentColor: '#06b6d4',
+          accentColorForeground: 'white',
+          borderRadius: 'large',
+        })}>
           <AppContext.Provider value={{ currentContract, setCurrentContract }}>
             {children}
           </AppContext.Provider>
@@ -46,7 +50,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 export function useApp() {
   const context = useContext(AppContext);
   if (!context) {
-    throw new Error('useApp must be used within AppProvider');
+    throw new Error('useApp must be used within Providers');
   }
   return context;
 }

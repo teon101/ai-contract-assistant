@@ -1,35 +1,49 @@
 import express, { Request, Response } from 'express';
 import { blockchainService } from '../services/blockchainService';
 import { aiService } from '../services/aiService';
+import { securityService } from '../services/securityService';
 
 const router = express.Router();
+
+// Get supported chains
+router.get('/chains', (req: Request, res: Response) => {
+  const chains = blockchainService.getSupportedChains();
+  res.json({ success: true, chains });
+});
 
 // Analyze contract
 router.post('/analyze', async (req: Request, res: Response) => {
   try {
-    console.log('📝 Analyze request received');
-    const { address } = req.body;
+    const { address, chain = 'ethereum' } = req.body;
 
     if (!address) {
-      console.log('❌ No address provided');
       return res.status(400).json({ error: 'Contract address is required' });
     }
 
-    console.log('🔍 Fetching contract info for:', address);
-    const contractInfo = await blockchainService.getContractInfo(address);
-    console.log('✅ Contract info retrieved');
+    const contractInfo = await blockchainService.getContractInfo(address, chain);
+    const securityReport = await securityService.analyzeContract(address, contractInfo.abi);
 
-    console.log('🤖 Getting AI analysis...');
-    const analysis = await aiService.analyzeContract(contractInfo);
-    console.log('✅ AI analysis complete');
+    const analysisPrompt = `Analyze this contract with security context:
+    
+Contract: ${contractInfo.name}
+Chain: ${contractInfo.chain}
+Security Score: ${securityReport.score}/100 (${securityReport.risk} risk)
+Warnings: ${securityReport.warnings.join(', ')}
+
+Provide a brief analysis.`;
+
+    const analysis = await aiService.analyzeContract({
+      ...contractInfo,
+      securityContext: analysisPrompt
+    });
 
     res.json({
       success: true,
       contract: contractInfo,
+      security: securityReport,
       analysis
     });
   } catch (error: any) {
-    console.error('❌ Error in analyze route:', error.message);
     res.status(500).json({
       success: false,
       error: error.message
@@ -37,11 +51,12 @@ router.post('/analyze', async (req: Request, res: Response) => {
   }
 });
 
-// Get contract info only (no AI)
+// Get contract info only
 router.get('/info/:address', async (req: Request, res: Response) => {
   try {
     const { address } = req.params;
-    const contractInfo = await blockchainService.getContractInfo(address);
+    const { chain = 'ethereum' } = req.query;
+    const contractInfo = await blockchainService.getContractInfo(address, chain as string);
 
     res.json({
       success: true,
